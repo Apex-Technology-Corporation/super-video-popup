@@ -50,6 +50,13 @@
     const video = preferredVideo || window.FVP_findBestVideo();
     if (!video) throw new Error('No se encontró ningún video en esta página.');
 
+    // Algunos sitios (p. ej. Pornhub) setean disablePictureInPicture=true en
+    // el <video> a propósito para bloquear la PiP nativa del navegador. Como
+    // esto es una decisión explícita del usuario al pedir la ventana
+    // flotante (no una restricción técnica ni de DRM), la desactivamos antes
+    // de pedir la PiP.
+    if (video.disablePictureInPicture) video.disablePictureInPicture = false;
+
     await video.requestPictureInPicture();
     state.video = video;
     video.addEventListener(

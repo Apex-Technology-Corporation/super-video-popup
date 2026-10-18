@@ -32,7 +32,8 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js", "pip.js"],
+      "all_frames": true,
+      "js": ["content.js", "pip.js", "overlay.js"],
       "run_at": "document_idle"
     }
   ],
