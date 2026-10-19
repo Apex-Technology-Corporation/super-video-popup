@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Super Video Popup — Presentación del proyecto</title>
+<meta name="description" content="Super Video Popup: extensión Manifest V3 para Chrome y Edge que abre cualquier video HTML5 en una ventana flotante Picture-in-Picture con un clic, un botón sobre el video o un atajo de teclado." />
+<link rel="icon" type="image/png" href="../icons/icon32.png" />
+<style>
+  :root {
+    --bg: #0a0d1a;
+    --bg-2: #0f1426;
+    --surface: #141a30;
+    --surface-2: #1a2140;
+    --border: #262f52;
+    --text: #eef0fa;
+    --muted: #a3a9c7;
+    --accent: #7c5cfc;
+    --accent-2: #9277ff;
+    --accent-soft: rgba(124, 92, 252, 0.14);
+    --danger: #f28b82;
+    --ok: #5fd39a;
+    --warn: #f5c26b;
+    --radius: 18px;
+    --radius-sm: 10px;
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    --font: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, 'Cascadia Code', Consolas, 'SFMono-Regular', Menlo, monospace;
+    --max: 1160px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(124, 92, 252, 0.22), transparent 60%),
+      radial-gradient(700px 420px at -10% 20%, rgba(64, 112, 255, 0.12), transparent 60%);
+    z-index: -1;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--accent-2); }
+  a:hover { color: #b3a2ff; }
+  code, kbd { font-family: var(--mono); font-size: 0.88em; }
+  code {
+    background: rgba(124, 92, 252, 0.12);
+    border: 1px solid rgba(124, 92, 252, 0.22);
+    border-radius: 6px;
+    padding: 1px 6px;
+    color: #d6ccff;
+    overflow-wrap: anywhere;
+  }
+  kbd {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: 2px 7px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  .skip {
+    position: absolute;
+    left: 16px;
+    top: -60px;
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    z-index: 100;
+    text-decoration: none;
+  }
+  .skip:focus { top: 12px; }
+
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  section { padding: 96px 0; }
+  .section-head { max-width: 760px; margin-bottom: 48px; }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    margin: 0 0 12px;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 18px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  h1, h2, h3 { line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: clamp(28px, 4vw, 40px); margin-bottom: 14px; }
+  h3 { font-size: 19px; }
+  .lead { color: var(--muted); font-size: 18px; margin: 0; }
+  .grad {
+    background: linear-gradient(100deg, #b9a8ff 0%, var(--accent) 55%, #5f8bff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ── Navegación ─────────────────────────────────────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10, 13, 26, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 200ms ease, background 200ms ease;
+  }
+  .nav.is-scrolled { border-bottom-color: var(--border); background: rgba(10, 13, 26, 0.9); }
+  .nav__inner { display: flex; align-items: center; gap: 24px; height: 68px; }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .brand img { width: 32px; height: 32px; border-radius: 8px; }
+  .nav__links { display: flex; gap: 4px; margin: 0 0 0 auto; padding: 0; list-style: none; }
+  .nav__links a {
+    display: block;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14.5px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: color 150ms ease, background 150ms ease;
+  }
+  .nav__links a:hover, .nav__links a.is-current { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+  .nav__toggle {
+    display: none;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav__toggle svg { width: 22px; height: 22px; }
+
+  /* ── Botones ────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font: 600 15px/1 var(--font);
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 150ms ease, background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    white-space: nowrap;
+  }
+  .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .btn--primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 8px 26px rgba(124, 92, 252, 0.35);
+  }
+  .btn--primary:hover { background: var(--accent-2); color: #fff; transform: translateY(-1px); }
+  .btn--ghost { background: rgba(255, 255, 255, 0.04); color: var(--text); border-color: var(--border); }
+  .btn--ghost:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); }
+  .btn--sm { padding: 9px 14px; font-size: 14px; }
+
+  /* ── Hero ───────────────────────────────────────────────── */
+  .hero { padding: 72px 0 88px; }
+  .hero__grid { display: grid; grid-template-columns: 1.02fr 1fr; gap: 56px; align-items: center; }
+  .hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 6px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+    font-size: 13.5px;
+    margin-bottom: 22px;
+  }
+  .hero__badge img { width: 24px; height: 24px; border-radius: 6px; }
+  .hero h1 { font-size: clamp(36px, 5.6vw, 60px); margin-bottom: 20px; }
+  .hero .lead { font-size: 19px; max-width: 560px; }
+  .hero__ctas { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 12px; }
+  .hero__dl-note { margin: 0 0 26px; font-size: 13.5px; color: var(--muted); }
+
+  /* ── Descarga ───────────────────────────────────────────── */
+  .dl { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 24px; align-items: stretch; }
+  .dl > * { min-width: 0; }
+  .dl-card {
+    position: relative;
+    overflow: hidden;
+    border-color: rgba(124, 92, 252, 0.5);
+    background:
+      radial-gradient(520px 260px at 100% 0%, rgba(124, 92, 252, 0.28), transparent 70%),
+      linear-gradient(180deg, var(--surface) 0%, rgba(20, 26, 48, 0.8) 100%);
+  }
+  .dl-card__head { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .dl-card__head img { width: 64px; height: 64px; border-radius: 16px; box-shadow: 0 10px 30px rgba(124, 92, 252, 0.4); }
+  .dl-card__head h3 { font-size: 22px; }
+  .dl-card__head p { margin: 4px 0 0; font-size: 14px; }
+  .dl-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 22px; }
+  .dl-meta div { background: rgba(7, 10, 20, 0.5); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+  .dl-meta dt { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .dl-meta dd { margin: 2px 0 0; font-weight: 600; }
+  .btn--lg { width: 100%; padding: 16px 22px; font-size: 16px; border-radius: 14px; }
+  .dl-files { margin: 18px 0 0; font-size: 13px; color: var(--muted); }
+  .dl-files code { font-size: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #d8dbf0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .chip--ok::before { background: var(--ok); }
+
+  .hero__visual { position: relative; }
+  .hero__visual::before {
+    content: '';
+    position: absolute;
+    inset: 8% 6% -6% 6%;
+    background: radial-gradient(closest-side, rgba(124, 92, 252, 0.45), transparent);
+    filter: blur(30px);
+    z-index: -1;
+  }
+  .browser {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .browser__bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #10162b; border-bottom: 1px solid var(--border); }
+  .browser__bar i { width: 10px; height: 10px; border-radius: 50%; background: #3a4266; display: block; }
+  .browser__bar span { margin-left: 10px; font-size: 12px; color: var(--muted); }
+  .hero__caption { margin: 12px 4px 0; font-size: 13px; color: var(--muted); }
+
+  /* ── Tarjetas genéricas ─────────────────────────────────── */
+  .card {
+    background: linear-gradient(180deg, var(--surface) 0%, rgba(20, 26, 48, 0.75) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px;
+    transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .card:hover { border-color: rgba(124, 92, 252, 0.55); transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); }
+  .icon-box {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-soft);
+    color: var(--accent-2);
+    margin-bottom: 18px;
+  }
+  .icon-box svg { width: 24px; height: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .card p { color: var(--muted); margin: 10px 0 0; }
+  .card .benefit { color: #cfd3ea; font-size: 14.5px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+  .card .benefit strong { color: var(--text); }
+  .tag {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-top: 14px;
+  }
+  .tag--ok { background: rgba(95, 211, 154, 0.12); color: var(--ok); }
+  .tag--warn { background: rgba(245, 194, 107, 0.12); color: var(--warn); }
+  .file { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+
+  /* ── Demo ───────────────────────────────────────────────── */
+  .demo { background: linear-gradient(180deg, transparent, rgba(15, 20, 38, 0.8) 30%, rgba(15, 20, 38, 0.8) 70%, transparent); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .tab {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font: 600 14px/1 var(--font);
+    padding: 11px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .tab:hover { color: var(--text); border-color: var(--accent); }
+  .tab[aria-selected='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .shot-panel { display: grid; grid-template-columns: 1.7fr 1fr; gap: 28px; align-items: center; }
+  .shot-panel[hidden] { display: none; }
+  .shot-btn {
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #000;
+    cursor: zoom-in;
+    box-shadow: var(--shadow);
+    display: block;
+    width: 100%;
+  }
+  .shot-btn img { transition: transform 300ms ease; }
+  .shot-btn:hover img { transform: scale(1.015); }
+  .shot-text h3 { font-size: 22px; margin-bottom: 10px; }
+  .shot-text p { color: var(--muted); margin: 0 0 14px; }
+  .shot-text ul { margin: 0; padding-left: 18px; color: #cfd3ea; }
+  .shot-text li { margin: 6px 0; }
+  .real-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ok);
+    background: rgba(95, 211, 154, 0.08);
+    border: 1px solid rgba(95, 211, 154, 0.25);
+    padding: 5px 11px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+
+  /* Simulador del popup (réplica de popup.css) */
+  .sim { display: grid; grid-template-columns: auto 1fr; gap: 48px; align-items: center; margin-top: 88px; }
+  .sim__stage { display: flex; justify-content: center; }
+  .xp {
+    --x-bg: #202124; --x-card: #2d2f33; --x-accent: #7c5cfc; --x-accent-hover: #9277ff;
+    --x-text: #fff; --x-text2: #9aa0a6; --x-border: #3c4043; --x-danger: #f28b82;
+    width: 320px;
+    max-width: 100%;
+    background: var(--x-bg);
+    color: var(--x-text);
+    border-radius: 12px;
+    border: 1px solid #3c4043;
+    box-shadow: var(--shadow), 0 0 0 6px rgba(124, 92, 252, 0.08);
+    font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+  .xp__head { display: flex; align-items: center; justify-content: space-between; }
+  .xp__brand { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; }
+  .xp__brand svg { width: 24px; height: 24px; fill: var(--x-accent); }
+  .xp__ver { font-size: 11px; color: var(--x-text2); }
+  .xp__card { background: var(--x-card); border-radius: 16px; padding: 12px 14px; }
+  .xp__site { display: flex; align-items: center; gap: 10px; }
+  .xp__fav { width: 28px; height: 28px; border-radius: 8px; background: var(--x-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .xp__fav svg { width: 16px; height: 16px; fill: var(--x-text2); }
+  .xp__info { min-width: 0; flex: 1; }
+  .xp__title { margin: 0; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .xp__domain { margin: 2px 0 0; font-size: 12px; color: var(--x-text2); }
+  .xp__badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: rgba(242, 139, 130, 0.15); color: var(--x-danger); }
+  .xp__badge[hidden] { display: none; }
+  .xp__btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 12px;
+    font: 600 14px/1.2 inherit;
+    font-family: inherit;
+    color: #fff;
+    background: var(--x-accent);
+    cursor: pointer;
+    transition: background 150ms ease, transform 150ms ease;
+  }
+  .xp__btn svg { width: 20px; height: 20px; fill: currentColor; }
+  .xp__btn:hover:not(:disabled) { background: var(--x-accent-hover); }
+  .xp__btn:active:not(:disabled) { transform: scale(0.98); }
+  .xp__btn:disabled { background: var(--x-border); color: var(--x-text2); cursor: not-allowed; }
+  .xp__btn.is-active { background: var(--x-danger); }
+  .xp__btn.is-active:hover { background: #ff6a5c; }
+  .xp__sc-title { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--x-text2); text-transform: uppercase; letter-spacing: 0.04em; }
+  .xp__row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 4px 0; }
+  .xp kbd { background: var(--x-bg); border: 1px solid var(--x-border); border-radius: 6px; padding: 2px 6px; font-size: 11px; font-family: inherit; color: var(--x-text2); }
+  .xp__hint { margin: 8px 0 0; font-size: 11px; color: var(--x-text2); line-height: 1.4; }
+  .xp__hint code { background: var(--x-bg); border: 0; color: var(--x-text2); border-radius: 4px; padding: 1px 4px; font-size: 10.5px; }
+  .xp__status { min-height: 14px; text-align: center; font-size: 11px; color: var(--x-text2); }
+
+  .sim__controls { display: flex; flex-direction: column; gap: 16px; }
+  .switch { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; font-weight: 600; }
+  .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .switch__track { width: 46px; height: 26px; border-radius: 999px; background: var(--border); position: relative; transition: background 150ms ease; flex-shrink: 0; }
+  .switch__track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 150ms ease; }
+  .switch input:checked + .switch__track { background: var(--accent); }
+  .switch input:checked + .switch__track::after { transform: translateX(20px); }
+  .switch input:focus-visible + .switch__track { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+  .sim__log {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: #070a14;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: #c9cde6;
+    min-height: 92px;
+  }
+  .sim__log b { color: var(--accent-2); font-weight: 600; }
+  .disclaimer {
+    font-size: 13px;
+    color: var(--warn);
+    background: rgba(245, 194, 107, 0.07);
+    border: 1px solid rgba(245, 194, 107, 0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 0;
+  }
+
+  /* ── Problema / solución ────────────────────────────────── */
+  .ps { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: stretch; }
+  .ps__col h3 { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .ps__col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .ps__col li { position: relative; padding-left: 32px; color: #cfd3ea; }
+  .ps__col li svg { position: absolute; left: 0; top: 3px; width: 20px; height: 20px; }
+  .ps__col--problem li svg { color: var(--danger); }
+  .ps__col--solution li svg { color: var(--ok); }
+  .ps__arrow { display: flex; align-items: center; color: var(--accent); }
+  .ps__arrow svg { width: 40px; height: 40px; }
+
+  /* ── Cómo funciona ──────────────────────────────────────── */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; counter-reset: step; list-style: none; margin: 0; padding: 0; }
+  .step { position: relative; }
+  .step__num {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    background: var(--accent);
+    color: #fff;
+    margin-bottom: 16px;
+    box-shadow: 0 0 0 6px rgba(124, 92, 252, 0.15);
+  }
+  .ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
+  .way { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border-radius: 14px; background: rgba(255, 255, 255, 0.025); border: 1px solid var(--border); }
+  .way svg { width: 22px; height: 22px; color: var(--accent-2); flex-shrink: 0; margin-top: 2px; }
+  .way p { margin: 4px 0 0; color: var(--muted); font-size: 14.5px; }
+
+  /* ── Tecnologías ────────────────────────────────────────── */
+  .tech { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .tech .card { padding: 22px; }
+  .tech h3 { font-size: 17px; }
+  .tech p { font-size: 14.5px; }
+  .tech .where { display: block; margin-top: 12px; }
+
+  /* ── Arquitectura (árbol) ───────────────────────────────── */
+  .arch { display: grid; grid-template-columns: 1fr 1.15fr; gap: 28px; align-items: start; }
+  .tree {
+    background: #070a14;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.75;
+    overflow-x: auto;
+    margin: 0;
+    color: #c9cde6;
+  }
+  .tree .d { color: #9db4ff; }
+  .tree .f { color: var(--text); }
+  .tree .c { color: #6c7396; }
+  .tree .k { color: var(--accent-2); }
+  .groups { display: grid; gap: 14px; }
+  .group { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; padding: 18px 20px; }
+  .group .icon-box { margin: 0; width: 40px; height: 40px; }
+  .group .icon-box svg { width: 20px; height: 20px; }
+  .group h3 { font-size: 16px; }
+  .group p { margin: 6px 0 0; font-size: 14.5px; }
+  .group .files { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* ── Diagrama ───────────────────────────────────────────── */
+  .diagram {
+    background: #070a14;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    overflow-x: auto;
+  }
+  .diagram svg { min-width: 760px; width: 100%; height: auto; display: block; }
+  .diagram .node rect { fill: #141a30; stroke: #333d68; stroke-width: 1.5; }
+  .diagram .node--user rect { fill: #1d1640; stroke: var(--accent); }
+  .diagram .node--api rect { fill: #10241c; stroke: #3c8f68; }
+  .diagram .node--pip rect { stroke: var(--accent); }
+  .diagram .node text { fill: #eef0fa; font: 600 15px var(--font); }
+  .diagram .node .sub { fill: #a3a9c7; font: 500 12px var(--mono); }
+  .diagram .grp { fill: rgba(124, 92, 252, 0.04); stroke: #2b3460; stroke-dasharray: 6 6; }
+  .diagram .grp-label { fill: #7f87ad; font: 600 12px var(--font); letter-spacing: 0.06em; }
+  .diagram .edge { fill: none; stroke: #5d67a0; stroke-width: 1.8; }
+  .diagram .edge--gesture { stroke: var(--accent-2); stroke-width: 2.2; }
+  .diagram .edge--msg { stroke-dasharray: 5 5; }
+  .diagram .lbl { fill: #c9cde6; font: 500 12px var(--mono); }
+  .diagram .lbl--g { fill: #c4b6ff; }
+  .diagram .lbl-bg { fill: #070a14; }
+  .legend { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 10px; }
+  .legend i { width: 28px; height: 0; border-top: 2px solid #5d67a0; display: inline-block; }
+  .legend i.g { border-top: 2.5px solid var(--accent-2); }
+  .legend i.m { border-top: 2px dashed #5d67a0; }
+  .callout { margin-top: 28px; }
+  .callout h3 { margin-bottom: 8px; }
+  .callout p { color: var(--muted); margin: 0; }
+
+  /* ── Permisos ───────────────────────────────────────────── */
+  .perm-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .perm-table th, .perm-table td { padding: 16px 18px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); font-size: 15px; }
+  .perm-table tr:last-child td { border-bottom: 0; }
+  .perm-table th { background: var(--surface-2); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .perm-table td { background: rgba(20, 26, 48, 0.6); color: #cfd3ea; }
+  .perm-table td:first-child { white-space: nowrap; }
+  .sec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 28px; }
+  .checklist { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; }
+  .checklist li { position: relative; padding-left: 28px; color: #cfd3ea; font-size: 15px; }
+  .checklist svg { position: absolute; left: 0; top: 4px; width: 18px; height: 18px; }
+  .checklist--ok svg { color: var(--ok); }
+  .checklist--warn svg { color: var(--warn); }
+
+  /* ── Instalación ────────────────────────────────────────── */
+  .install { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .install ol, .install-steps { margin: 0; padding: 0; list-style: none; counter-reset: i; display: grid; gap: 14px; }
+  .install ol li, .install-steps li { counter-increment: i; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; color: #cfd3ea; }
+  .hero__grid > *, .shot-panel > *, .arch > *, .install > *, .sim > *, .group > * { min-width: 0; }
+  .install ol li::before, .install-steps li::before {
+    content: counter(i);
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--accent-soft);
+    color: var(--accent-2);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .code {
+    position: relative;
+    background: #070a14;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin: 12px 0 0;
+  }
+  .code pre { margin: 0; padding: 16px 18px; padding-right: 86px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; color: #d8dbf0; }
+  .code pre .c { color: #6c7396; }
+  .copy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font: 600 12px var(--font);
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .copy:hover { color: var(--text); border-color: var(--accent); }
+  .warnbox {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: rgba(245, 194, 107, 0.07);
+    border: 1px solid rgba(245, 194, 107, 0.28);
+    color: #f1dcb0;
+    font-size: 14.5px;
+  }
+  .warnbox svg { width: 22px; height: 22px; color: var(--warn); flex-shrink: 0; margin-top: 1px; }
+  .shortcut-list { display: grid; gap: 10px; margin-top: 14px; }
+  .shortcut-list div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.025); border: 1px solid var(--border); border-radius: 10px; }
+
+  /* ── Información ────────────────────────────────────────── */
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .fact { padding: 20px 22px; }
+  .fact dt { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .fact dd { margin: 6px 0 0; font-size: 17px; font-weight: 600; }
+  .limits { margin-top: 28px; }
+  .limits ul { margin: 12px 0 0; padding-left: 20px; color: #cfd3ea; display: grid; gap: 8px; }
+
+  /* ── Recursos ───────────────────────────────────────────── */
+  .res { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .res a.card { display: block; text-decoration: none; color: var(--text); }
+  .res a.card h3 { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 17px; }
+  .res a.card h3 svg { width: 18px; height: 18px; color: var(--accent-2); flex-shrink: 0; }
+
+  /* ── Pie ────────────────────────────────────────────────── */
+  footer { border-top: 1px solid var(--border); padding: 48px 0 40px; background: rgba(7, 10, 20, 0.6); }
+  .foot { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; }
+  .foot p { color: var(--muted); margin: 12px 0 0; font-size: 14.5px; max-width: 380px; }
+  .foot h4 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .foot a { color: #cfd3ea; text-decoration: none; font-size: 14.5px; }
+  .foot a:hover { color: var(--accent-2); }
+  .foot__bottom { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); color: #7f87ad; font-size: 13px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+
+  /* ── Volver arriba / lightbox ───────────────────────────── */
+  .to-top {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity 200ms ease, transform 200ms ease, border-color 150ms ease;
+    z-index: 40;
+  }
+  .to-top.is-visible { opacity: 1; pointer-events: auto; transform: none; }
+  .to-top:hover { border-color: var(--accent); }
+  .to-top svg { width: 20px; height: 20px; }
+  dialog.lightbox {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    max-width: min(1280px, 94vw);
+    width: 100%;
+  }
+  dialog.lightbox::backdrop { background: rgba(4, 6, 14, 0.86); backdrop-filter: blur(4px); }
+  .lightbox figure { margin: 0; }
+  .lightbox img { border-radius: 12px; border: 1px solid var(--border); width: 100%; }
+  .lightbox figcaption { color: #cfd3ea; text-align: center; margin-top: 12px; font-size: 14.5px; }
+  .lightbox__close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: rgba(10, 13, 26, 0.85);
+    color: #fff;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  /* ── Animaciones de entrada ─────────────────────────────── */
+  .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity 600ms ease, transform 600ms ease; }
+  .js .reveal.is-in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    .js .reveal { opacity: 1; transform: none; }
+  }
+
+  /* ── Responsive ─────────────────────────────────────────── */
+  @media (max-width: 1080px) {
+    .tech { grid-template-columns: repeat(2, 1fr); }
+    .facts { grid-template-columns: repeat(2, 1fr); }
+    .steps { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 960px) {
+    .nav__toggle { display: inline-flex; }
+    .nav__links {
+      position: absolute;
+      top: 68px;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px 16px 18px;
+      background: rgba(10, 13, 26, 0.98);
+      border-bottom: 1px solid var(--border);
+      display: none;
+    }
+    .nav__links.is-open { display: flex; }
+    .nav__links a { padding: 12px 14px; font-size: 16px; }
+    .nav__cta { display: none; }
+    .hero__grid, .shot-panel, .arch, .install, .sim, .dl { grid-template-columns: 1fr; }
+    .hero__grid { gap: 40px; }
+    .sim { gap: 32px; }
+    .grid-3, .res, .ways { grid-template-columns: 1fr 1fr; }
+    .ps { grid-template-columns: 1fr; }
+    .ps__arrow { justify-content: center; transform: rotate(90deg); }
+    .foot { grid-template-columns: 1fr 1fr; }
+    .foot > div:first-child { grid-column: 1 / -1; }
+  }
+  @media (max-width: 640px) {
+    section { padding: 72px 0; }
+    .wrap { padding: 0 16px; }
+    .hero { padding: 40px 0 64px; }
+    .grid-3, .grid-2, .res, .ways, .tech, .facts, .steps, .sec-grid { grid-template-columns: 1fr; }
+    .hero__ctas .btn { flex: 1 1 100%; }
+    .perm-table, .perm-table tbody, .perm-table tr, .perm-table td { display: block; width: 100%; }
+    .perm-table thead { display: none; }
+    .perm-table tr { border-bottom: 1px solid var(--border); }
+    .perm-table tr:last-child { border-bottom: 0; }
+    .perm-table td { border: 0; padding: 10px 16px; }
+    .perm-table td:first-child { padding-top: 16px; white-space: normal; }
+    .perm-table td:last-child { padding-bottom: 16px; }
+    .perm-table td[data-label]::before { content: attr(data-label); display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
+    .foot { grid-template-columns: 1fr; }
+    .card { padding: 22px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
+
+<!-- ═══════════════ A. NAVEGACIÓN ═══════════════ -->
+<header class="nav" id="nav">
+  <div class="wrap nav__inner">
+    <a class="brand" href="#inicio" aria-label="Super Video Popup, ir al inicio">
+      <img src="../icons/icon128.png" alt="" width="32" height="32" />
+      <span>Super Video Popup</span>
+    </a>
+    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav aria-label="Secciones">
+      <ul class="nav__links" id="navLinks">
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#funciones">Funciones</a></li>
+        <li><a href="#como-funciona">Cómo funciona</a></li>
+        <li><a href="#tecnologias">Tecnologías</a></li>
+        <li><a href="#arquitectura">Arquitectura</a></li>
+        <li><a href="#seguridad">Permisos</a></li>
+        <li><a href="#descargar">Descargar</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn--primary btn--sm nav__cta" href="#descargar">Descargar extensión</a>
+  </div>
+</header>
+
+<main id="contenido">
+
+<!-- ═══════════════ B. HERO ═══════════════ -->
+<section class="hero" id="inicio">
+  <div class="wrap hero__grid">
+    <div class="reveal">
+      <span class="hero__badge"><img src="../icons/icon48.png" alt="" width="24" height="24" />Extensión para Chrome y Edge · Manifest V3</span>
+      <h1>El video sigue contigo, <span class="grad">aunque cambies de pestaña</span></h1>
+      <p class="lead">Super Video Popup saca el video HTML5 de cualquier página a una ventana flotante que se queda encima de todo. Se activa con un clic en el icono, con un botón sobre el video o con <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>.</p>
+      <div class="hero__ctas">
+        <a class="btn btn--primary" href="descargas/super-video-popup-v1.0.0.zip" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+          Descargar extensión
+        </a>
+        <a class="btn btn--ghost" href="#demo">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          Ver la demo
+        </a>
+      </div>
+      <p class="hero__dl-note">Gratis · v1.0.0 · .zip de 19 KB · <a href="#descargar">Cómo instalarla</a></p>
+      <ul class="chips" aria-label="Características verificadas">
+        <li class="chip">Manifest V3</li>
+        <li class="chip">Chrome / Edge 116+</li>
+        <li class="chip">Picture-in-Picture API</li>
+        <li class="chip chip--ok">Sin peticiones de red</li>
+        <li class="chip chip--ok">Sin dependencias</li>
+      </ul>
+    </div>
+    <div class="hero__visual reveal">
+      <div class="browser">
+        <div class="browser__bar" aria-hidden="true"><i></i><i></i><i></i><span>Captura real · Chrome con la extensión cargada</span></div>
+        <img src="../presentacion/02-funcionalidad-principal.png" alt="Captura real: ventana Picture-in-Picture flotando sobre Chrome mientras la página muestra 'Reproduciendo en modo imagen en imagen'" width="1920" height="1040" />
+      </div>
+      <p class="hero__caption">Ventana flotante activa. La página original sigue abierta y el video no sale de su DOM.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ C. DEMO ═══════════════ -->
+<section class="demo" id="demo" aria-labelledby="demo-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Demostración</p>
+      <h2 id="demo-title">Así se ve funcionando</h2>
+      <p class="lead">Capturas tomadas con la extensión real cargada en Chrome, sobre una página de demostración local con un video de muestra.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="tabs" role="tablist" aria-label="Capturas de la extensión">
+        <button class="tab" role="tab" id="tab-1" aria-controls="panel-1" aria-selected="true">1 · Popup</button>
+        <button class="tab" role="tab" id="tab-2" aria-controls="panel-2" aria-selected="false" tabindex="-1">2 · Ventana flotante</button>
+        <button class="tab" role="tab" id="tab-3" aria-controls="panel-3" aria-selected="false" tabindex="-1">3 · Botón sobre el video</button>
+      </div>
+
+      <div class="shot-panel" role="tabpanel" id="panel-1" aria-labelledby="tab-1">
+        <button class="shot-btn" type="button" data-full="../presentacion/01-vista-principal.png" data-caption="Popup de la extensión abierto sobre una página con video.">
+          <img src="../presentacion/01-vista-principal.png" alt="Captura real del popup de Super Video Popup con la pestaña detectada y el botón 'Cerrar ventana flotante'" width="1920" height="1040" loading="lazy" />
+        </button>
+        <div class="shot-text">
+          <span class="real-note">● Captura real</span>
+          <h3>El popup: estado y control</h3>
+          <p>Al hacer clic en el icono, el popup activa la ventana flotante si la pestaña tiene video. Después muestra el estado real.</p>
+          <ul>
+            <li>Título, dominio y favicon de la pestaña activa.</li>
+            <li>El botón cambia a <strong>Cerrar ventana flotante</strong> cuando la PiP está abierta.</li>
+            <li>Tarjeta con los atajos de teclado configurados.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="shot-panel" role="tabpanel" id="panel-2" aria-labelledby="tab-2" hidden>
+        <button class="shot-btn" type="button" data-full="../presentacion/02-funcionalidad-principal.png" data-caption="Ventana Picture-in-Picture nativa flotando sobre el navegador.">
+          <img src="../presentacion/02-funcionalidad-principal.png" alt="Captura real de la ventana Picture-in-Picture flotando en la esquina inferior derecha" width="1920" height="1040" loading="lazy" />
+        </button>
+        <div class="shot-text">
+          <span class="real-note">● Captura real</span>
+          <h3>La ventana flotante</h3>
+          <p>Es la Picture-in-Picture nativa del navegador: siempre visible, aunque cambies de pestaña o de aplicación.</p>
+          <ul>
+            <li>El tamaño, la posición y los controles los gestiona el navegador.</li>
+            <li>Al pasar el mouse, Chrome muestra el origen y sus controles nativos.</li>
+            <li>El <code>&lt;video&gt;</code> sigue en su sitio dentro de la página.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="shot-panel" role="tabpanel" id="panel-3" aria-labelledby="tab-3" hidden>
+        <button class="shot-btn" type="button" data-full="../presentacion/03-funcionalidad-complementaria.png" data-caption="Botón flotante que la extensión inyecta sobre cada video.">
+          <img src="../presentacion/03-funcionalidad-complementaria.png" alt="Captura real del botón violeta de la extensión en la esquina superior derecha del video" width="1920" height="934" loading="lazy" />
+        </button>
+        <div class="shot-text">
+          <span class="real-note">● Captura real</span>
+          <h3>Botón directo sobre el video</h3>
+          <p><code>overlay.js</code> coloca un botón de 36×36 px en la esquina superior derecha de cada video visible de al menos 80×80 px.</p>
+          <ul>
+            <li>Aislado en un Shadow DOM cerrado: no hereda estilos del sitio.</li>
+            <li>Se reposiciona en cada frame, aunque el reproductor se mueva.</li>
+            <li>Se vuelve violeta al pasar el mouse.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulador -->
+    <div class="sim reveal" aria-labelledby="sim-title">
+      <div class="sim__stage">
+        <div class="xp" aria-label="Réplica interactiva del popup">
+          <div class="xp__head">
+            <span class="xp__brand">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM12 9l6 4-6 4V9z"/></svg>
+              Super Video Popup
+            </span>
+            <span class="xp__ver">v1.0.0</span>
+          </div>
+          <div class="xp__card xp__site">
+            <span class="xp__fav" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></span>
+            <div class="xp__info">
+              <p class="xp__title" id="xpTitle">Demo — Big Buck Bunny</p>
+              <p class="xp__domain" id="xpDomain">127.0.0.1</p>
+            </div>
+            <span class="xp__badge" id="xpBadge" hidden>Sin video</span>
+          </div>
+          <div class="xp__card">
+            <button class="xp__btn" id="xpBtn" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM12 9l6 4-6 4V9z"/></svg>
+              <span id="xpLabel">Activar Picture-in-Picture</span>
+            </button>
+          </div>
+          <div class="xp__card">
+            <p class="xp__sc-title">Atajos de teclado</p>
+            <div class="xp__row"><span>Activar PiP</span><kbd>Ctrl+Shift+P</kbd></div>
+            <div class="xp__row"><span>Cerrar ventana</span><kbd>Ctrl+Shift+C</kbd></div>
+            <p class="xp__hint">Si un atajo no responde, revisa <code>chrome://extensions/shortcuts</code> (Ctrl+Shift+C puede estar reservado por Chrome).</p>
+          </div>
+          <div class="xp__status" id="xpStatus" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="sim__controls">
+        <p class="eyebrow">Simulador</p>
+        <h3 id="sim-title" style="font-size:26px">Prueba la lógica del popup</h3>
+        <p class="lead" style="font-size:16px">Réplica en HTML y CSS de <code>popup.html</code> y <code>popup.css</code>. Reproduce los estados que pinta <code>renderState()</code> en <code>popup.js</code>.</p>
+        <label class="switch">
+          <input type="checkbox" id="simHasVideo" checked />
+          <span class="switch__track" aria-hidden="true"></span>
+          La pestaña tiene un <code>&lt;video&gt;</code>
+        </label>
+        <div class="sim__log" id="simLog" aria-live="polite" role="status"></div>
+        <p class="disclaimer">Esto es una representación, no una captura ni la extensión real: aquí no se abre ninguna ventana flotante.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ D. PROBLEMA Y SOLUCIÓN ═══════════════ -->
+<section id="problema" aria-labelledby="ps-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Problema y solución</p>
+      <h2 id="ps-title">La Picture-in-Picture existe, pero cuesta encontrarla</h2>
+      <p class="lead">Cada sitio la ofrece a su manera, la esconde o la bloquea. La extensión da un acceso único que funciona igual en todas partes.</p>
+    </div>
+    <div class="ps">
+      <div class="card ps__col ps__col--problem reveal">
+        <h3>Sin la extensión</h3>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>La opción está escondida en menús contextuales o no aparece.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Algunos sitios la desactivan con <code>disablePictureInPicture</code>.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Los reproductores con capas transparentes impiden usar el clic derecho sobre el video.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Hay que volver a la pestaña del video para seguir viéndolo.</li>
+        </ul>
+      </div>
+      <div class="ps__arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+      </div>
+      <div class="card ps__col ps__col--solution reveal">
+        <h3>Con Super Video Popup</h3>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Tres accesos iguales en todos los sitios: icono, botón y atajo.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><code>pip.js</code> desactiva ese bloqueo cuando el usuario pide la ventana.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>El botón siempre visible de <code>overlay.js</code> queda por encima de esas capas.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Ventana flotante encima de otras pestañas, aplicaciones y monitores.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ E. FUNCIONALIDADES ═══════════════ -->
+<section id="funciones" aria-labelledby="f-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Funcionalidades</p>
+      <h2 id="f-title">Lo que hace, comprobado en el código</h2>
+      <p class="lead">Cada tarjeta indica el archivo donde está implementada la función.</p>
+    </div>
+    <div class="grid-3">
+      <article class="card reveal">
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9l10.5 3.5-4.5 1.5-1.5 4.5z"/><path d="M5 3v2M3 5h2M8.5 4.5 7 3M4.5 8.5 3 7"/></svg></div>
+        <h3>Activación con un clic</h3>
+        <p>Abrir el popup ya activa la PiP si la pestaña tiene video, sin un segundo clic.</p>
+        <p class="benefit"><strong>Beneficio:</strong> un solo gesto del icono al video flotante.</p>
+        <span class="file">popup.js · autoActivate()</span><br /><span class="tag tag--ok">Implementado</span>
+      </article>
+      <article class="card reveal">
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg></div>
+        <h3>Botón sobre cada video</h3>
+        <p>Botón siempre visible en los videos de al menos 80×80 px, dentro de un Shadow DOM cerrado.</p>
+        <p class="benefit"><strong>Beneficio:</strong> funciona donde el clic derecho del sitio no llega.</p>
+        <span class="file">overlay.js</span><br /><span class="tag tag--ok">Implementado</span>
+      </article>
+      <article class="card reveal">
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+        <h3>Detección automática</h3>
+        <p>Un <code>MutationObserver</code> detecta los videos que aparecen después de cargar la página (SPA) y entra en los Shadow DOM abiertos.</p>
+        <p class="benefit"><strong>Beneficio:</strong> no depende de una lista de sitios compatibles.</p>
+        <span class="file">content.js · overlay.js</span><br /><span class="tag tag--ok">Implementado</span>
+      </article>
+      <article class="card reveal">
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 15 8.5 22 9.3l-5.2 4.7L18.2 21 12 17.6 5.8 21l1.4-7L2 9.3 9 8.5z"/></svg></div>
+        <h3>Elige el video correcto</h3>
+        <p>Prioriza el video que se está reproduciendo y, si no hay ninguno, el de mayor área visible.</p>
+        <p class="benefit"><strong>Beneficio:</strong> ignora miniaturas y anuncios pequeños.</p>
+        <span class="file">content.js · pickBestVideo()</span><br /><span class="tag tag--ok">Implementado</span>
+      </article>
+      <article class="card reveal">
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></div>
+        <h3>Atajos de teclado</h3>
+        <p><kbd>Ctrl+Shift+P</kbd> activa o cierra la ventana; <kbd>Ctrl+Shift+C</kbd> la cierra. Se pueden reasignar en Chrome.</p>
+        <p class="benefit"><strong>Beneficio:</strong> control sin usar el mouse.</p>
+        <span class="file">background.js · manifest.json</span><br /><span class="tag tag--ok">Implementado</span>
+      </article>
+      <article class="card reveal">
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>Ignora el bloqueo del sitio</h3>
+        <p>Si el sitio puso <code>disablePictureInPicture</code>, la extensión lo desactiva al recibir la orden del usuario.</p>
+        <p class="benefit"><strong>Beneficio:</strong> la ventana flotante también funciona en sitios que la bloquean a propósito.</p>
+        <span class="file">pip.js · open()</span><br /><span class="tag tag--ok">Implementado</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ F. CÓMO FUNCIONA ═══════════════ -->
+<section id="como-funciona" aria-labelledby="h-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Cómo funciona</p>
+      <h2 id="h-title">Del video en la página a la ventana flotante</h2>
+    </div>
+    <ol class="steps">
+      <li class="card step reveal">
+        <div class="step__num">1</div>
+        <h3>Abres una página con video</h3>
+        <p>Los content scripts se inyectan en todas las páginas e iframes y detectan los <code>&lt;video&gt;</code>.</p>
+      </li>
+      <li class="card step reveal">
+        <div class="step__num">2</div>
+        <h3>Das la orden</h3>
+        <p>Clic en el icono, en el botón sobre el video o atajo de teclado: tres puntos de entrada.</p>
+      </li>
+      <li class="card step reveal">
+        <div class="step__num">3</div>
+        <h3>Se elige el video</h3>
+        <p><code>pickBestVideo()</code> toma el que se reproduce o, si no, el más grande.</p>
+      </li>
+      <li class="card step reveal">
+        <div class="step__num">4</div>
+        <h3>Se abre la PiP</h3>
+        <p><code>requestPictureInPicture()</code> abre la ventana flotante. Para cerrarla, usa el mismo botón, el popup o <kbd>Ctrl+Shift+C</kbd>.</p>
+      </li>
+    </ol>
+    <div class="ways">
+      <div class="way reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+        <div><strong>Icono de la extensión</strong><p>El popup se abre y activa la PiP en el mismo gesto del clic.</p></div>
+      </div>
+      <div class="way reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M15 8h3v3"/></svg>
+        <div><strong>Botón sobre el video</strong><p>El clic ocurre dentro de la página, así que llama a <code>FVP_PiP.toggle()</code> directamente.</p></div>
+      </div>
+      <div class="way reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 14h10"/></svg>
+        <div><strong>Atajo de teclado</strong><p><code>chrome.commands</code> en el service worker, sin abrir el popup.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ G. TECNOLOGÍAS ═══════════════ -->
+<section id="tecnologias" aria-labelledby="t-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Tecnologías</p>
+      <h2 id="t-title">Tecnología web estándar, sin dependencias</h2>
+      <p class="lead">No hay <code>package.json</code>, bundler ni frameworks. Todo lo que se ejecuta está en el repositorio.</p>
+    </div>
+    <div class="tech">
+      <article class="card reveal"><h3>Manifest V3</h3><p>Service worker en lugar de background page, content scripts y popup de acción.</p><span class="file where">manifest.json</span></article>
+      <article class="card reveal"><h3>JavaScript (ES2017+)</h3><p>IIFE, <code>async/await</code>, <code>WeakMap</code> y <code>Set</code>, sin transpilación.</p><span class="file where">*.js</span></article>
+      <article class="card reveal"><h3>HTML5 y CSS3</h3><p>Popup con custom properties, tema oscuro y acento <code>#7C5CFC</code>.</p><span class="file where">popup.html · popup.css</span></article>
+      <article class="card reveal"><h3>Picture-in-Picture API</h3><p><code>requestPictureInPicture()</code>, <code>exitPictureInPicture()</code> y <code>pictureInPictureElement</code>.</p><span class="file where">pip.js</span></article>
+      <article class="card reveal"><h3>Chrome Extensions API</h3><p><code>scripting</code>, <code>tabs</code>, <code>commands</code> y <code>runtime</code> para inyectar código, consultar la pestaña y enviar mensajes.</p><span class="file where">popup.js · background.js · content.js</span></article>
+      <article class="card reveal"><h3>APIs del DOM</h3><p><code>MutationObserver</code>, Shadow DOM y <code>requestAnimationFrame</code> para detectar videos y posicionar el botón.</p><span class="file where">overlay.js · content.js</span></article>
+      <article class="card reveal"><h3>Bash y PowerShell</h3><p>Scripts para instalar, probar y empaquetar en Linux/macOS y Windows.</p><span class="file where">scripts/</span></article>
+      <article class="card reveal"><h3>Python 3</h3><p>Cliente del Chrome DevTools Protocol escrito con la biblioteca estándar, y generación de iconos con Pillow.</p><span class="file where">_cdp_loader.py · gen_icons.py</span></article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ H. ARQUITECTURA ═══════════════ -->
+<section id="arquitectura" aria-labelledby="a-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Arquitectura</p>
+      <h2 id="a-title">Estructura del proyecto</h2>
+      <p class="lead">La extensión se carga desde la raíz del repositorio, donde está <code>manifest.json</code>.</p>
+    </div>
+    <div class="arch">
+      <pre class="tree reveal" aria-label="Árbol de directorios"><span class="d">super-video-popup/</span>
+├── <span class="k">manifest.json</span>      <span class="c"># Manifest V3</span>
+├── <span class="f">background.js</span>      <span class="c"># service worker: atajos</span>
+├── <span class="f">content.js</span>         <span class="c"># detección y estado</span>
+├── <span class="f">pip.js</span>             <span class="c"># control de la PiP</span>
+├── <span class="f">overlay.js</span>         <span class="c"># botón sobre el video</span>
+├── <span class="f">popup.html</span>         <span class="c"># interfaz del popup</span>
+├── <span class="f">popup.css</span>
+├── <span class="f">popup.js</span>
+├── <span class="d">icons/</span>             <span class="c"># 16 · 32 · 48 · 128 px</span>
+├── <span class="f">gen_icons.py</span>       <span class="c"># genera los iconos</span>
+├── <span class="d">scripts/</span>
+│   ├── <span class="f">1-install.sh</span>
+│   ├── <span class="f">2-test-extension.sh | .ps1</span>
+│   ├── <span class="f">_cdp_loader.py</span>
+│   └── <span class="f">3-build.sh | .ps1</span>
+├── <span class="d">docs/</span>              <span class="c"># landing + privacidad</span>
+├── <span class="d">store-assets/</span>      <span class="c"># ficha Chrome Web Store</span>
+├── <span class="d">presentacion/</span>      <span class="c"># capturas reales</span>
+├── <span class="f">README.md</span> · <span class="f">PUBLISHING.md</span>
+└── <span class="f">LICENSE</span>            <span class="c"># MIT</span></pre>
+      <div class="groups">
+        <div class="card group reveal">
+          <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></div>
+          <div><h3>Interfaz y lógica del popup</h3><p>Muestra la pestaña activa y el estado de la PiP, y lanza la activación preservando el gesto del usuario.</p><div class="files"><code>popup.html</code><code>popup.css</code><code>popup.js</code></div></div>
+        </div>
+        <div class="card group reveal">
+          <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></div>
+          <div><h3>Segundo plano</h3><p>Convierte los atajos de <code>chrome.commands</code> en acciones sobre la pestaña activa.</p><div class="files"><code>background.js</code></div></div>
+        </div>
+        <div class="card group reveal">
+          <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></div>
+          <div><h3>Integración con la página y multimedia</h3><p>Content scripts que comparten el mundo aislado: detección, control de la PiP y botón superpuesto.</p><div class="files"><code>content.js</code><code>pip.js</code><code>overlay.js</code></div></div>
+        </div>
+        <div class="card group reveal">
+          <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg></div>
+          <div><h3>Recursos, build y publicación</h3><p>Iconos, scripts de pruebas y empaquetado, y textos para la Chrome Web Store y GitHub Pages.</p><div class="files"><code>icons/</code><code>scripts/</code><code>docs/</code><code>store-assets/</code></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ I. FLUJO / DIAGRAMA ═══════════════ -->
+<section id="flujo" aria-labelledby="d-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Flujo entre componentes</p>
+      <h2 id="d-title">Quién habla con quién</h2>
+      <p class="lead">Todas las conexiones del diagrama salen del código fuente.</p>
+    </div>
+    <div class="diagram reveal">
+      <svg viewBox="0 0 1000 580" role="img" aria-labelledby="dg-t dg-d">
+        <title id="dg-t">Diagrama de arquitectura de Super Video Popup</title>
+        <desc id="dg-d">El usuario activa la extensión desde el popup, un atajo de teclado o el botón sobre el video. El popup y el service worker inyectan código en pip.js con executeScript y envían mensajes a content.js. overlay.js llama a pip.js directamente. pip.js usa la función de selección de content.js y llama a la API Picture-in-Picture del navegador.</desc>
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#5d67a0"/></marker>
+          <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#9277ff"/></marker>
+        </defs>
+
+        <rect class="grp" x="24" y="318" width="952" height="140" rx="16"/>
+        <text class="grp-label" x="548" y="342">PÁGINA WEB · CONTENT SCRIPTS</text>
+
+        <!-- aristas -->
+        <path class="edge edge--gesture" d="M440 84 L232 168" marker-end="url(#arg)"/>
+        <path class="edge edge--gesture" d="M500 84 L500 168" marker-end="url(#arg)"/>
+        <path class="edge edge--gesture" d="M560 84 C 800 96, 820 250, 820 356" marker-end="url(#arg)"/>
+        <path class="edge edge--msg" d="M180 228 L180 356" marker-start="url(#ar)" marker-end="url(#ar)"/>
+        <path class="edge edge--gesture" d="M290 228 L438 356" marker-end="url(#arg)"/>
+        <path class="edge edge--gesture" d="M520 228 L520 356" marker-end="url(#arg)"/>
+        <path class="edge edge--msg" d="M440 228 L300 356" marker-end="url(#ar)"/>
+        <path class="edge" d="M380 410 L312 410" marker-end="url(#ar)"/>
+        <path class="edge edge--gesture" d="M696 410 L630 410" marker-end="url(#arg)"/>
+        <path class="edge edge--gesture" d="M500 440 L500 490" marker-end="url(#arg)"/>
+
+        <!-- etiquetas -->
+        <rect class="lbl-bg" x="248" y="108" width="132" height="20" rx="4"/><text class="lbl lbl--g" x="256" y="122">clic en el icono</text>
+        <rect class="lbl-bg" x="508" y="116" width="168" height="20" rx="4"/><text class="lbl lbl--g" x="514" y="130">atajo (chrome.commands)</text>
+        <rect class="lbl-bg" x="738" y="176" width="124" height="20" rx="4"/><text class="lbl lbl--g" x="744" y="190">clic en el botón</text>
+        <rect class="lbl-bg" x="60" y="282" width="112" height="20" rx="4"/><text class="lbl" x="64" y="296">FVP_GET_STATE</text>
+        <rect class="lbl-bg" x="526" y="282" width="170" height="20" rx="4"/><text class="lbl lbl--g" x="532" y="296">executeScript → toggle()</text>
+        <rect class="lbl-bg" x="384" y="248" width="120" height="20" rx="4"/><text class="lbl" x="390" y="262">FVP_CLOSE_PIP</text>
+        <rect class="lbl-bg" x="220" y="262" width="104" height="20" rx="4"/><text class="lbl lbl--g" x="226" y="276">executeScript</text>
+        <text class="lbl" x="250" y="454">FVP_findBestVideo()</text>
+        <text class="lbl lbl--g" x="600" y="454">FVP_PiP.toggle()</text>
+        <rect class="lbl-bg" x="508" y="458" width="200" height="20" rx="4"/><text class="lbl lbl--g" x="512" y="472">requestPictureInPicture()</text>
+
+        <!-- nodos -->
+        <g class="node node--user"><rect x="420" y="30" width="160" height="54" rx="14"/><text x="500" y="63" text-anchor="middle">Usuario</text></g>
+        <g class="node"><rect x="60" y="168" width="260" height="60" rx="12"/><text x="190" y="194" text-anchor="middle">Popup</text><text class="sub" x="190" y="214" text-anchor="middle">popup.html · popup.js</text></g>
+        <g class="node"><rect x="380" y="168" width="260" height="60" rx="12"/><text x="510" y="194" text-anchor="middle">Service worker</text><text class="sub" x="510" y="214" text-anchor="middle">background.js</text></g>
+        <g class="node"><rect x="56" y="356" width="256" height="84" rx="12"/><text x="184" y="388" text-anchor="middle">content.js</text><text class="sub" x="184" y="410" text-anchor="middle">detección · estado</text></g>
+        <g class="node node--pip"><rect x="380" y="356" width="250" height="84" rx="12"/><text x="505" y="388" text-anchor="middle">pip.js</text><text class="sub" x="505" y="410" text-anchor="middle">window.FVP_PiP</text></g>
+        <g class="node"><rect x="696" y="356" width="256" height="84" rx="12"/><text x="824" y="388" text-anchor="middle">overlay.js</text><text class="sub" x="824" y="410" text-anchor="middle">botón · Shadow DOM</text></g>
+        <g class="node node--api"><rect x="340" y="490" width="320" height="64" rx="12"/><text x="500" y="518" text-anchor="middle">Picture-in-Picture nativa</text><text class="sub" x="500" y="538" text-anchor="middle">API del navegador</text></g>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i class="g"></i>Cadena que conserva el gesto del usuario</span>
+      <span><i class="m"></i>Mensajería asíncrona (chrome.tabs.sendMessage)</span>
+      <span><i></i>Llamada directa en el mismo mundo aislado</span>
+    </div>
+    <div class="card callout reveal">
+      <h3>La decisión técnica clave: no perder el gesto del usuario</h3>
+      <p><code>requestPictureInPicture()</code> exige una <em>activación transitoria</em>: un gesto reciente del usuario en el documento. Un <code>chrome.runtime.sendMessage</code> asíncrono pierde ese gesto, así que el popup y el service worker llaman a <code>chrome.scripting.executeScript</code> de forma síncrona, en el mismo manejador del clic o del atajo. Solo las acciones que no abren ventanas (consultar el estado, cerrar) usan mensajería normal.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ J. PERMISOS Y SEGURIDAD ═══════════════ -->
+<section id="seguridad" aria-labelledby="s-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Permisos y seguridad</p>
+      <h2 id="s-title">Qué pide la extensión y para qué</h2>
+      <p class="lead">Permisos declarados en <code>manifest.json</code> y dónde se usan en el código.</p>
+    </div>
+    <div class="reveal">
+      <table class="perm-table">
+        <thead><tr><th scope="col">Permiso</th><th scope="col">Para qué se declara</th><th scope="col">Uso en el código</th></tr></thead>
+        <tbody>
+          <tr>
+            <td data-label="Permiso"><code>scripting</code></td>
+            <td data-label="Para qué">Inyectar la llamada que abre la PiP conservando el gesto del usuario.</td>
+            <td data-label="Uso">Sí: <code>chrome.scripting.executeScript</code> en <code>popup.js</code> y <code>background.js</code>.</td>
+          </tr>
+          <tr>
+            <td data-label="Permiso"><code>host_permissions: &lt;all_urls&gt;</code></td>
+            <td data-label="Para qué">Ejecutar los content scripts en cualquier sitio y en todos sus iframes.</td>
+            <td data-label="Uso">Sí: lo usan <code>content_scripts</code> y <code>executeScript</code>. Además permite leer el título, la URL y el favicon de la pestaña en el popup.</td>
+          </tr>
+          <tr>
+            <td data-label="Permiso"><code>activeTab</code></td>
+            <td data-label="Para qué">Identificar la pestaña activa al abrir el popup o usar un atajo.</td>
+            <td data-label="Uso">Declarado. <em>Inferencia:</em> como ya está <code>&lt;all_urls&gt;</code>, en la práctica parece redundante.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sec-grid">
+      <div class="card reveal">
+        <h3>Comprobado en el código</h3>
+        <ul class="checklist checklist--ok">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No usa <code>fetch</code>, <code>XMLHttpRequest</code> ni <code>WebSocket</code>.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No usa <code>eval</code>, <code>new Function</code> ni código remoto.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>No guarda datos: ni <code>chrome.storage</code> ni almacenamiento local.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>El único <code>innerHTML</code> asigna un icono SVG constante.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>El botón inyectado vive en un Shadow DOM cerrado.</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <h3>A tener en cuenta</h3>
+        <ul class="checklist checklist--warn">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><code>&lt;all_urls&gt;</code> con <code>all_frames</code> da acceso de lectura y escritura al DOM de cualquier página.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Desactiva a propósito el <code>disablePictureInPicture</code> que pone el sitio.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>No hay auditoría de seguridad ni pruebas automatizadas en el repositorio.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ DESCARGA ═══════════════ -->
+<section id="descargar" aria-labelledby="dl-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Descarga</p>
+      <h2 id="dl-title">Descarga la extensión e instálala en 1 minuto</h2>
+      <p class="lead">Descarga el paquete y cárgalo en Chrome o Edge en modo desarrollador. No necesitas cuenta ni registro.</p>
+    </div>
+    <div class="dl">
+      <div class="card dl-card reveal">
+        <div class="dl-card__head">
+          <img src="../icons/icon128.png" alt="" width="64" height="64" />
+          <div>
+            <h3>Super Video Popup</h3>
+            <p>Extensión para Chrome y Edge · Manifest V3</p>
+          </div>
+        </div>
+        <dl class="dl-meta">
+          <div><dt>Versión</dt><dd>1.0.0</dd></div>
+          <div><dt>Tamaño</dt><dd>19 KB</dd></div>
+          <div><dt>Requiere</dt><dd>Chrome 116+</dd></div>
+        </dl>
+        <a class="btn btn--primary btn--lg" href="descargas/super-video-popup-v1.0.0.zip" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+          Descargar extensión (.zip)
+        </a>
+        <p class="dl-files">Contiene solo los archivos que necesita la extensión: <code>manifest.json</code>, <code>background.js</code>, <code>content.js</code>, <code>pip.js</code>, <code>overlay.js</code>, <code>popup.*</code> e <code>icons/</code>. No incluye scripts ni documentación.</p>
+      </div>
+      <div class="card reveal">
+        <h3 style="margin-bottom:18px">Cómo instalarla</h3>
+        <ol class="dl-steps install-steps">
+          <li><span>Pulsa <strong>Descargar extensión</strong> y guarda el archivo <code>super-video-popup-v1.0.0.zip</code>.</span></li>
+          <li><span><strong>Descomprime</strong> el .zip (clic derecho → <em>Extraer todo</em>). Chrome no instala el .zip directamente.</span></li>
+          <li><span>Abre <code>chrome://extensions/</code> (o <code>edge://extensions/</code>) y activa el <strong>Modo de desarrollador</strong>.</span></li>
+          <li><span>Pulsa <strong>Cargar descomprimida</strong> y elige la carpeta que acabas de extraer, la que contiene <code>manifest.json</code>.</span></li>
+          <li><span>Fija el icono en la barra de extensiones, abre una página con video y pulsa el icono o <kbd>Ctrl+Shift+P</kbd>.</span></li>
+        </ol>
+        <p style="color:var(--muted);font-size:14px;margin:18px 0 0">No borres ni muevas la carpeta extraída: Chrome carga la extensión desde ahí.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ K. INSTALACIÓN ═══════════════ -->
+<section id="instalacion" aria-labelledby="i-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Para desarrolladores</p>
+      <h2 id="i-title">Instalar desde el código fuente</h2>
+      <p class="lead">Si tienes el repositorio, carga la extensión sin empaquetar desde la <strong>raíz</strong>. <code>dist/</code> solo guarda archivos .zip y no se usa para cargarla.</p>
+    </div>
+    <div class="install">
+      <div class="card reveal">
+        <h3 style="margin-bottom:18px">Carga manual</h3>
+        <ol>
+          <li><span>Abre <code>chrome://extensions/</code> (o <code>edge://extensions/</code>).</span></li>
+          <li><span>Activa el <strong>Modo de desarrollador</strong>.</span></li>
+          <li><span>Pulsa <strong>Cargar descomprimida</strong>.</span></li>
+          <li><span>Selecciona la carpeta <code>super-video-popup/</code>, la que contiene <code>manifest.json</code>.</span></li>
+          <li><span>Comprueba que aparece sin errores y fija el icono en la barra.</span></li>
+        </ol>
+        <h3 style="margin:28px 0 4px">Atajos</h3>
+        <div class="shortcut-list">
+          <div><span>Activar / cerrar Picture-in-Picture</span><kbd>Ctrl+Shift+P</kbd></div>
+          <div><span>Cerrar la ventana flotante</span><kbd>Ctrl+Shift+C</kbd></div>
+        </div>
+        <p style="color:var(--muted);font-size:14px;margin:12px 0 0"><kbd>Ctrl+Shift+C</kbd> coincide con "Inspeccionar" de Chrome; si no responde, reasígnalo en <code>chrome://extensions/shortcuts</code>.</p>
+      </div>
+      <div class="card reveal">
+        <h3>Scripts incluidos</h3>
+        <p>Perfil de pruebas aislado con la extensión ya cargada (vía DevTools Protocol):</p>
+        <div class="code"><pre><span class="c"># Windows</span>
+powershell -File scripts\2-test-extension.ps1
+
+<span class="c"># Linux / macOS</span>
+./scripts/2-test-extension.sh</pre><button class="copy" type="button" data-copy="powershell -File scripts\2-test-extension.ps1">Copiar</button></div>
+        <p style="margin-top:18px">Empaquetar en <code>dist/super-video-popup-v1.0.0.zip</code>:</p>
+        <div class="code"><pre>./scripts/3-build.sh
+powershell -File scripts\3-build.ps1</pre><button class="copy" type="button" data-copy="./scripts/3-build.sh">Copiar</button></div>
+        <div class="warnbox" role="note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          <span>Los scripts de build no incluyen todavía <code>overlay.js</code>, que sí está declarado en el manifest. Hay que añadirlo antes de generar un paquete para publicar. El .zip de la sección <a href="#descargar">Descargar</a> sí lo incluye, y la carga manual desde la raíz no se ve afectada.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ L. INFORMACIÓN ═══════════════ -->
+<section id="info" aria-labelledby="n-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Ficha técnica</p>
+      <h2 id="n-title">Información del proyecto</h2>
+    </div>
+    <dl class="facts">
+      <div class="card fact reveal"><dt>Nombre</dt><dd>Super Video Popup</dd></div>
+      <div class="card fact reveal"><dt>Tipo</dt><dd>Extensión de navegador</dd></div>
+      <div class="card fact reveal"><dt>Plataforma</dt><dd>Chrome / Edge 116+</dd></div>
+      <div class="card fact reveal"><dt>Versión</dt><dd>1.0.0</dd></div>
+      <div class="card fact reveal"><dt>Manifest</dt><dd>V3</dd></div>
+      <div class="card fact reveal"><dt>Lenguajes</dt><dd>JavaScript · HTML · CSS</dd></div>
+      <div class="card fact reveal"><dt>Licencia</dt><dd>MIT · © 2026 alvarosiles</dd></div>
+      <div class="card fact reveal"><dt>Estado</dt><dd>Funcional en local</dd></div>
+    </dl>
+    <div class="card limits reveal">
+      <h3>Limitaciones conocidas</h3>
+      <ul>
+        <li>Solo actúa sobre elementos <code>&lt;video&gt;</code>; no sobre <code>&lt;audio&gt;</code> ni <code>&lt;canvas&gt;</code>.</li>
+        <li>El tamaño, la posición y los controles de la ventana flotante los decide el navegador.</li>
+        <li>No funciona en páginas que no admiten inyección: <code>chrome://</code>, Chrome Web Store, visor de PDF.</li>
+        <li>La selección automática del popup y del atajo no busca dentro de Shadow DOM; el botón flotante sí.</li>
+        <li>El botón se reposiciona con un bucle <code>requestAnimationFrame</code> permanente, que tiene un coste en páginas muy dinámicas.</li>
+        <li>La publicación en la Chrome Web Store no está confirmada.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ M. RECURSOS ═══════════════ -->
+<section id="recursos" aria-labelledby="r-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Documentación</p>
+      <h2 id="r-title">Recursos del repositorio</h2>
+      <p class="lead">Los documentos se abren desde la copia local del proyecto.</p>
+    </div>
+    <div class="res">
+      <a class="card reveal" href="../presentacion/README.md"><h3>README técnico <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></h3><p>Arquitectura, módulos, instalación y limitaciones.</p></a>
+      <a class="card reveal" href="../presentacion/version-portafolio.md"><h3>Ficha de portafolio <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></h3><p>Resumen del proyecto, retos técnicos y estado.</p></a>
+      <a class="card reveal" href="../PUBLISHING.md"><h3>Guía de publicación <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></h3><p>Pasos para subir la extensión a la Chrome Web Store.</p></a>
+      <a class="card reveal" href="../docs/privacy.html"><h3>Política de privacidad <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></h3><p>Versión preparada para GitHub Pages (<code>docs/</code>).</p></a>
+      <a class="card reveal" href="../LICENSE"><h3>Licencia MIT <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></h3><p>Texto completo de la licencia.</p></a>
+      <a class="card reveal" href="https://github.com/alvarosiles/super-video-popup" rel="noopener"><h3>Repositorio <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></h3><p>URL declarada en <code>homepage_url</code> del manifest.</p></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════════ N. PIE ═══════════════ -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#inicio"><img src="../icons/icon128.png" alt="" width="32" height="32" /><span>Super Video Popup</span></a>
+        <p>Extensión Manifest V3 para Chrome y Edge que abre cualquier video HTML5 en una ventana flotante Picture-in-Picture. Sin dependencias y sin peticiones de red.</p>
+      </div>
+      <div>
+        <h4>Secciones</h4>
+        <ul>
+          <li><a href="#demo">Demo</a></li>
+          <li><a href="#funciones">Funcionalidades</a></li>
+          <li><a href="#arquitectura">Arquitectura</a></li>
+          <li><a href="#descargar">Descargar</a></li>
+          <li><a href="#instalacion">Instalación</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Recursos</h4>
+        <ul>
+          <li><a href="../presentacion/README.md">README</a></li>
+          <li><a href="../PUBLISHING.md">Publicación</a></li>
+          <li><a href="../docs/privacy.html">Privacidad</a></li>
+          <li><a href="https://github.com/alvarosiles/super-video-popup" rel="noopener">Repositorio</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot__bottom">
+      <span>Super Video Popup v1.0.0 · Licencia MIT · © 2026 alvarosiles</span>
+      <span>Capturas tomadas de la extensión real en funcionamiento.</span>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" type="button" aria-label="Volver al inicio">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+</button>
+
+<dialog class="lightbox" id="lightbox" aria-label="Captura ampliada">
+  <figure>
+    <img id="lbImg" src="" alt="" />
+    <figcaption id="lbCap"></figcaption>
+  </figure>
+  <button class="lightbox__close" id="lbClose" type="button" aria-label="Cerrar">×</button>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+  document.documentElement.classList.add('js');
+
+  // Menú móvil
+  const toggle = document.getElementById('navToggle');
+  const links = document.getElementById('navLinks');
+  const setMenu = (open) => {
+    links.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+  };
+  toggle.addEventListener('click', () => setMenu(!links.classList.contains('is-open')));
+  links.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && links.classList.contains('is-open')) { setMenu(false); toggle.focus(); }
+  });
+
+  // Barra al hacer scroll + volver arriba
+  const nav = document.getElementById('nav');
+  const toTop = document.getElementById('toTop');
+  const onScroll = () => {
+    const y = window.scrollY;
+    nav.classList.toggle('is-scrolled', y > 8);
+    toTop.classList.toggle('is-visible', y > 700);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  toTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0 });
+    document.querySelector('.brand').focus({ preventScroll: true });
+  });
+
+  // Animaciones de entrada y sección actual
+  const reveals = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+    }, { rootMargin: '0px 0px -8% 0px' });
+    reveals.forEach((el) => io.observe(el));
+
+    const navMap = new Map();
+    links.querySelectorAll('a').forEach((a) => navMap.set(a.getAttribute('href').slice(1), a));
+    const spy = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const a = navMap.get(e.target.id);
+        if (a && e.isIntersecting) {
+          links.querySelectorAll('a').forEach((x) => x.classList.remove('is-current'));
+          a.classList.add('is-current');
+        }
+      }
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    document.querySelectorAll('main section[id]').forEach((s) => spy.observe(s));
+  } else {
+    reveals.forEach((el) => el.classList.add('is-in'));
+  }
+
+  // Pestañas de capturas (patrón WAI-ARIA)
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  const select = (tab) => {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t));
+    t.addEventListener('keydown', (e) => {
+      let n = null;
+      if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+      if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+      if (e.key === 'Home') n = tabs[0];
+      if (e.key === 'End') n = tabs[tabs.length - 1];
+      if (n) { e.preventDefault(); select(n); n.focus(); }
+    });
+  });
+
+  // Lightbox
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lbImg');
+  const lbCap = document.getElementById('lbCap');
+  document.querySelectorAll('.shot-btn').forEach((b) => {
+    b.addEventListener('click', () => {
+      const img = b.querySelector('img');
+      lbImg.src = b.dataset.full;
+      lbImg.alt = img.alt;
+      lbCap.textContent = b.dataset.caption;
+      if (typeof lb.showModal === 'function') lb.showModal();
+      else window.open(b.dataset.full, '_blank', 'noopener');
+    });
+  });
+  document.getElementById('lbClose').addEventListener('click', () => lb.close());
+  lb.addEventListener('click', (e) => { if (e.target === lb) lb.close(); });
+
+  // Simulador del popup: mismos estados que renderState() en popup.js
+  const sim = { hasVideo: true, pipActive: false };
+  const xpBtn = document.getElementById('xpBtn');
+  const xpLabel = document.getElementById('xpLabel');
+  const xpBadge = document.getElementById('xpBadge');
+  const xpTitle = document.getElementById('xpTitle');
+  const xpDomain = document.getElementById('xpDomain');
+  const xpStatus = document.getElementById('xpStatus');
+  const log = document.getElementById('simLog');
+  const hasVideo = document.getElementById('simHasVideo');
+
+  const render = (msg) => {
+    xpBadge.hidden = sim.hasVideo;
+    xpBtn.disabled = !sim.hasVideo;
+    xpBtn.classList.toggle('is-active', sim.pipActive);
+    xpLabel.textContent = sim.pipActive ? 'Cerrar ventana flotante' : 'Activar Picture-in-Picture';
+    xpTitle.textContent = sim.hasVideo ? 'Demo — Big Buck Bunny' : 'Artículo sin video';
+    xpDomain.textContent = sim.hasVideo ? '127.0.0.1' : 'example.com';
+    log.innerHTML = '';
+    const line = (k, v) => {
+      const d = document.createElement('div');
+      const b = document.createElement('b');
+      b.textContent = k;
+      d.append(b, ' ' + v);
+      log.appendChild(d);
+    };
+    line('state', `{ hasVideo: ${sim.hasVideo}, pipActive: ${sim.pipActive} }`);
+    if (msg) line('→', msg);
+  };
+
+  xpBtn.addEventListener('click', () => {
+    sim.pipActive = !sim.pipActive;
+    render(sim.pipActive
+      ? 'executeScript → FVP_PiP.toggle() → requestPictureInPicture()'
+      : 'executeScript → FVP_PiP.toggle() → exitPictureInPicture()');
+  });
+  hasVideo.addEventListener('change', () => {
+    sim.hasVideo = hasVideo.checked;
+    sim.pipActive = false;
+    xpStatus.textContent = '';
+    render(sim.hasVideo
+      ? 'FVP_GET_STATE → hay <video>, botón habilitado'
+      : 'FVP_GET_STATE → sin <video>: badge "Sin video" y botón desactivado');
+  });
+  render('Pulsa el botón del popup o cambia el interruptor.');
+
+  // Copiar comandos
+  document.querySelectorAll('.copy').forEach((b) => {
+    b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.copy);
+        b.textContent = 'Copiado';
+      } catch (_e) {
+        b.textContent = 'No disponible';
+      }
+      setTimeout(() => { b.textContent = 'Copiar'; }, 1600);
+    });
+  });
+})();
+</script>
+</body>
+</html>
